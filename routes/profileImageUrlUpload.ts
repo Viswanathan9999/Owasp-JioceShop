@@ -17,6 +17,20 @@ export function profileImageUrlUpload () {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (req.body.imageUrl !== undefined) {
       const url = req.body.imageUrl
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(url);
+        const allowedDomains = ['example.com', 'trusted.com']; // Add trusted domains here
+        if (!allowedDomains.includes(parsedUrl.hostname)) {
+          throw new Error('URL hostname is not allowed');
+        }
+        if (parsedUrl.pathname.includes('..')) {
+          throw new Error('URL contains invalid path traversal');
+        }
+      } catch (error) {
+        next(new Error('Invalid or unsafe URL provided: ' + error.message));
+        return;
+      }
       if (url.match(/(.)*solve\/challenges\/server-side(.)*/) !== null) req.app.locals.abused_ssrf_bug = true
       const loggedInUser = security.authenticatedUsers.get(req.cookies.token)
       if (loggedInUser) {
